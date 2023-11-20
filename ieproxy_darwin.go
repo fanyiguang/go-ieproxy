@@ -86,6 +86,19 @@ func writeConf() {
 		darwinProxyConf.Static.Protocols["https"] = httpProxy
 	}
 
+	cfNumSocksEnable := C.CFNumberRef(C.CFDictionaryGetValue(cfDictProxy, unsafe.Pointer(C.kCFNetworkProxiesSOCKSEnable)))
+	if unsafe.Pointer(cfNumSocksEnable) != C.NULL && cfNumberGetGoInt(cfNumSocksEnable) > 0 {
+		darwinProxyConf.Static.Active = true
+		if darwinProxyConf.Static.Protocols == nil {
+			darwinProxyConf.Static.Protocols = make(map[string]string)
+		}
+		socksHost := C.CFStringRef(C.CFDictionaryGetValue(cfDictProxy, unsafe.Pointer(C.kCFNetworkProxiesSOCKSProxy)))
+		socksPort := C.CFNumberRef(C.CFDictionaryGetValue(cfDictProxy, unsafe.Pointer(C.kCFNetworkProxiesSOCKSPort)))
+
+		socksProxy := fmt.Sprintf("%s:%d", cfStringGetGoString(socksHost), cfNumberGetGoInt(socksPort))
+		darwinProxyConf.Static.Protocols["socks"] = socksProxy
+	}
+
 	if darwinProxyConf.Static.Active {
 		cfArrayExceptionList := C.CFArrayRef(C.CFDictionaryGetValue(cfDictProxy, unsafe.Pointer(C.kCFNetworkProxiesExceptionsList)))
 		if unsafe.Pointer(cfArrayExceptionList) != C.NULL {
